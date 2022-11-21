@@ -1,4 +1,5 @@
 """Core data structures."""
+from .backend_selection import Device, array_api, NDArray, default_device
 import needle
 from typing import List, Optional, NamedTuple, Tuple, Union
 from collections import namedtuple
@@ -8,8 +9,6 @@ from needle import init
 # needle version
 LAZY_MODE = False
 TENSOR_COUNTER = 0
-
-from .backend_selection import Device, array_api, NDArray, default_device
 
 
 class Op:
@@ -158,7 +157,7 @@ class Value:
         return data.numpy() if not isinstance(data, tuple) else [x.numpy() for x in data]
 
 
-### Not needed in HW1
+# Not needed in HW1
 class TensorTuple(Value):
     """Represent a tuple of tensors.
 
@@ -217,7 +216,8 @@ class Tensor(Value):
                 )
         else:
             device = device if device else default_device()
-            cached_data = Tensor._array_from_numpy(array, device=device, dtype=dtype)
+            cached_data = Tensor._array_from_numpy(
+                array, device=device, dtype=dtype)
 
         self._init(
             None,
@@ -314,15 +314,24 @@ class Tensor(Value):
             return needle.ops.MulScalar(other)(self)
 
     def __pow__(self, other):
-        ### BEGIN YOUR SOLUTION
-        raise NotImplementedError()
-        ### END YOUR SOLUTION
+        # BEGIN YOUR SOLUTION
+        if isinstance(other, Tensor):
+            return needle.ops.PowerScalar()(self, other)
+        else:
+            return needle.ops.PowerScalar(other)(self)
+        # END YOUR SOLUTION
 
     def __sub__(self, other):
         if isinstance(other, Tensor):
             return needle.ops.EWiseAdd()(self, needle.ops.Negate()(other))
         else:
             return needle.ops.AddScalar(-other)(self)
+       
+    def __rsub__(self, other):
+        if isinstance(other, Tensor):
+            return needle.ops.EWiseAdd()(needle.ops.Negate()(self), other)
+        else:
+            return needle.ops.AddScalar(other)(-self)
 
     def __truediv__(self, other):
         if isinstance(other, Tensor):
@@ -353,7 +362,6 @@ class Tensor(Value):
 
     __radd__ = __add__
     __rmul__ = __mul__
-    __rsub__ = __sub__
     __rmatmul__ = __matmul__
 
 
@@ -371,9 +379,18 @@ def compute_gradient_of_variables(output_tensor, out_grad):
     # Traverse graph in reverse topological order given the output_node that we are taking gradient wrt.
     reverse_topo_order = list(reversed(find_topo_sort([output_tensor])))
 
-    ### BEGIN YOUR SOLUTION
-    raise NotImplementedError()
-    ### END YOUR SOLUTION
+    # BEGIN YOUR SOLUTION
+    output_tensor.grad = out_grad
+    for node in reverse_topo_order:
+        adj_v = sum_node_list(node_to_output_grads_list[node])
+        node.grad = adj_v
+        if not node.is_leaf():
+            gradients = node.op.gradient_as_tuple(adj_v, node)
+            for input, grad in zip(node.inputs, gradients):
+                if not input in node_to_output_grads_list:
+                    node_to_output_grads_list[input] = []
+                node_to_output_grads_list[input].append(grad)
+    # END YOUR SOLUTION
 
 
 def find_topo_sort(node_list: List[Value]) -> List[Value]:
@@ -384,16 +401,24 @@ def find_topo_sort(node_list: List[Value]) -> List[Value]:
     after all its predecessors are traversed due to post-order DFS, we get a topological
     sort.
     """
-    ### BEGIN YOUR SOLUTION
-    raise NotImplementedError()
-    ### END YOUR SOLUTION
+    # BEGIN YOUR SOLUTION
+    topo = []
+    visited = set()
+    for node in node_list:
+        topo_sort_dfs(node, visited, topo)
+    return topo
+    # END YOUR SOLUTION
 
 
 def topo_sort_dfs(node, visited, topo_order):
     """Post-order DFS"""
-    ### BEGIN YOUR SOLUTION
-    raise NotImplementedError()
-    ### END YOUR SOLUTION
+    # BEGIN YOUR SOLUTION
+    for input_node in node.inputs:
+        topo_sort_dfs(input_node, visited, topo_order)
+    if node not in visited:
+        visited.add(node)
+        topo_order.append(node)
+    # END YOUR SOLUTION
 
 
 ##############################
