@@ -257,7 +257,7 @@ class Summation(TensorOp):
 
     def compute(self, a):
         # BEGIN YOUR SOLUTION
-        return a.sum(axis=self.axes)
+        return a.sum(self.axes)
         # END YOUR SOLUTION
 
     def gradient(self, out_grad, node):
@@ -422,7 +422,7 @@ class Tanh(TensorOp):
 
     def gradient(self, out_grad, node):
         # BEGIN YOUR SOLUTION
-        return out_grad * (1.0 + tanh(node.inputs[0]) ** 2)
+        return out_grad * (1.0 - tanh(node.inputs[0]) ** 2)
         # END YOUR SOLUTION
 
 
@@ -442,12 +442,12 @@ class Stack(TensorOp):
 
     def compute(self, args: TensorTuple) -> Tensor:
         # BEGIN YOUR SOLUTION
-        pass
+        return Tensor(numpy.stack([t.numpy() for t in args], axis=self.axis))
         # END YOUR SOLUTION
 
     def gradient(self, out_grad, node):
         # BEGIN YOUR SOLUTION
-        raise NotImplementedError()
+        return split(out_grad, axis=self.axis)
         # END YOUR SOLUTION
 
 
@@ -467,12 +467,15 @@ class Split(TensorTupleOp):
 
     def compute(self, A):
         # BEGIN YOUR SOLUTION
-        raise NotImplementedError()
+        def unstack(a, axis=0):
+            return [numpy.squeeze(e, axis) for e in numpy.split(a, a.shape[axis], axis=axis)]
+        s = unstack(A.numpy(), self.axis)
+        return [Tensor(i) for i in s]
         # END YOUR SOLUTION
 
     def gradient(self, out_grad, node):
         # BEGIN YOUR SOLUTION
-        raise NotImplementedError()
+        return stack(out_grad, axis=self.axis)
         # END YOUR SOLUTION
 
 
