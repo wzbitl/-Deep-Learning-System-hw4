@@ -440,7 +440,7 @@ class Stack(TensorOp):
         """
         self.axis = axis
 
-    def compute(self, args: TensorTuple) -> Tensor:
+    def compute(self, args):
         # BEGIN YOUR SOLUTION
         return Tensor(numpy.stack([t.numpy() for t in args], axis=self.axis))
         # END YOUR SOLUTION
