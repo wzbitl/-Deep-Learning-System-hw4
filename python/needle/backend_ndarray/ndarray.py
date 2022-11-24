@@ -565,8 +565,8 @@ class NDArray:
 
         if axis is None:
             view = self.compact().reshape((1,) * (self.ndim - 1) + (prod(self.shape),))
-            out = NDArray.make((1,) * (self.ndim if keepdims else 1), device=self.device)
-
+            out = NDArray.make(
+                (1,) * (self.ndim if keepdims else 1), device=self.device)
 
         else:
             if isinstance(axis, (tuple, list)):
@@ -603,7 +603,17 @@ class NDArray:
         Note: compact() before returning.
         """
         # BEGIN YOUR SOLUTION
-        raise NotImplementedError()
+        new_offset = self._offset
+        for ax in axes:
+            mul = 1
+            for id in range(ax+1, self.ndim):
+                mul *= self.shape[id]
+            new_offset += (self.shape[ax] - 1) * mul
+        new_strides = list(self.strides)
+        for i in axes:
+            new_strides[i] = -self.strides[i]
+        return NDArray.make(self.shape, strides=tuple(new_strides), device=self.device,
+                            handle=self._handle, offset=new_offset).compact()
         # END YOUR SOLUTION
 
     def pad(self, axes):
