@@ -553,7 +553,7 @@ class UnDilate(TensorOp):
 
     def gradient(self, out_grad, node):
         # BEGIN YOUR SOLUTION
-        raise NotImplementedError()
+        return dilate(out_grad, self.axes, self.dilation)
         # END YOUR SOLUTION
 
 
@@ -568,12 +568,40 @@ class Conv(TensorOp):
 
     def compute(self, A, B):
         # BEGIN YOUR SOLUTION
-        raise NotImplementedError()
+        A_pad = A.pad(((0, 0),) + ((self.padding, self.padding),)
+                      * 2 + ((0, 0),))
+        N, H, W, C_in = A_pad.shape
+        K, _, _, C_out = B.shape
+        Ns, Hs, Ws, Cs = A_pad.strides
+
+        inner_dim = K * K * C_in
+        new_h = (H-K) // self.stride + 1
+        new_w = (W-K) // self.stride + 1
+        A2col = A_pad.as_strided(shape=(N, new_h, new_w, K, K, C_in),
+                                 strides=(Ns, Hs * self.stride, Ws * self.stride, Hs, Ws, Cs)).compact().reshape((N * new_h * new_w, inner_dim))
+        out = A2col @ B.reshape((K*K*C_in, C_out))
+        return out.reshape((N, new_h, new_w, C_out))
         # END YOUR SOLUTION
 
     def gradient(self, out_grad, node):
         # BEGIN YOUR SOLUTION
-        raise NotImplementedError()
+        # out_grad   (N, (H-K+2P)//S+1, (W-K+2P)//S+1, C_out)
+        # x_grad    (N, H, W, C_in)
+        # w_grad    (K, K, C_in, C_out)
+        X, W = node.inputs
+        K, _, _, C_out = W.shape
+        # (H+2P-K+1)-K+1+2X = H-2K+2+2P+2X = H, X = K-P-1
+        # n,nh,nw,cout conv k,k,cout,cin -> n,h,w,cin
+        W = transpose(flip(W, (0, 1)), (2, 3))
+        out_grad = dilate(out_grad, (1, 2), self.stride-1)
+        x_grad = conv(out_grad, W, 1, K-self.padding-1)
+        # H-(H-K+1+2P)+1+2X=K-2P+2X=K, X=P
+        # cin,w,h,n conv nw,nh,n,cout -> cin,kw,kh,cout
+        X = transpose(transpose(X, (1, 2)), (0, 3))
+        out_grad = transpose(out_grad, (0, 2))
+        w_grad = conv(X, out_grad, 1, self.padding)
+        w_grad = transpose(w_grad, (0, 2))
+        return x_grad, w_grad
         # END YOUR SOLUTION
 
 
