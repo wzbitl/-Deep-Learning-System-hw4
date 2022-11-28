@@ -250,6 +250,7 @@ class NDArray:
 
         # BEGIN YOUR SOLUTION
         assert prod(self.shape) == prod(new_shape)
+        self = self.compact()
         return NDArray.make(new_shape, device=self.device, handle=self._handle, offset=self._offset)
         # END YOUR SOLUTION
 

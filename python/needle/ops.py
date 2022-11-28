@@ -391,7 +391,7 @@ class LogSumExp(TensorOp):
 
     def gradient(self, out_grad, node):
         # BEGIN YOUR SOLUTION
-        input = node.inputs[0].numpy()
+        input = node.inputs[0].cached_data
         Z_max = input.max(self.axes)
         s = list(input.shape)
         if self.axes is None:
@@ -406,7 +406,7 @@ class LogSumExp(TensorOp):
         expzsum = array_api.exp(input).sum(self.axes)
         logz = array_api.broadcast_to(
             array_api.reshape(expzsum, s), input.shape)
-        return g / Tensor(logz) * Tensor(expz)
+        return g / Tensor(logz, device=out_grad.device) * Tensor(expz, device=out_grad.device)
         # END YOUR SOLUTION
 
 
@@ -593,7 +593,8 @@ class Conv(TensorOp):
         # (H+2P-K+1)-K+1+2X = H-2K+2+2P+2X = H, X = K-P-1
         # n,nh,nw,cout conv k,k,cout,cin -> n,h,w,cin
         W = transpose(flip(W, (0, 1)), (2, 3))
-        out_grad = dilate(out_grad, (1, 2), self.stride-1)
+        if (self.stride > 1):
+            out_grad = dilate(out_grad, (1, 2), self.stride-1)
         x_grad = conv(out_grad, W, 1, K-self.padding-1)
         # H-(H-K+1+2P)+1+2X=K-2P+2X=K, X=P
         # cin,w,h,n conv nw,nh,n,cout -> cin,kw,kh,cout
