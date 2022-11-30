@@ -257,7 +257,12 @@ class Summation(TensorOp):
 
     def compute(self, a):
         # BEGIN YOUR SOLUTION
-        return a.sum(self.axes)
+        if isinstance(self.axes, (tuple, list)):
+            for i in self.axes:
+                a = a.sum(i)
+            return a
+        else:
+            return a.sum(self.axes)
         # END YOUR SOLUTION
 
     def gradient(self, out_grad, node):
