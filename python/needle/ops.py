@@ -43,7 +43,7 @@ class TupleGetItem(TensorOp):
         in_grad = []
         for i, value in enumerate(node.inputs[0]):
             if i != index:
-                in_grad.append(init.zeros_like(value))
+                in_grad.append(init.zeros_like(value, device=value.device))
             else:
                 in_grad.append(out_grad)
         return MakeTensorTuple()(*in_grad)
@@ -364,8 +364,9 @@ class ReLU(TensorOp):
 
     def gradient(self, out_grad, node):
         # BEGIN YOUR SOLUTION
-        input = node.inputs[0]
-        return out_grad * Tensor(array_api.where(input.cached_data > 0, 1, 0))
+        input = node.inputs[0].cached_data
+        hot = input >= 0
+        return out_grad * Tensor(hot, device=out_grad.device, dtype=out_grad.dtype)
         # END YOUR SOLUTION
 
 

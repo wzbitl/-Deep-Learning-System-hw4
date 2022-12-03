@@ -94,11 +94,15 @@ class DataLoader:
         dataset: Dataset,
         batch_size: Optional[int] = 1,
         shuffle: bool = False,
+        device=None,
+        dtype="float32"
     ):
 
         self.dataset = dataset
         self.shuffle = shuffle
         self.batch_size = batch_size
+        self.device = device
+        self.dtype = dtype
         if not self.shuffle:
             self.ordering = np.array_split(
                 np.arange(len(dataset)), range(
@@ -123,7 +127,7 @@ class DataLoader:
         else:
             data_batch = self.dataset[self.ordering[self.index]]
             self.index += 1
-        return tuple([Tensor(i) for i in data_batch])
+        return tuple([Tensor(i, device=self.device, dtype=self.dtype) for i in data_batch])
         # END YOUR SOLUTION
 
 
@@ -170,7 +174,7 @@ class CIFAR10Dataset(Dataset):
         super().__init__(transforms)
         X = []
         y = []
-        for file in os.listdir(base_folder):
+        for file in sorted(os.listdir(base_folder)):
             if (train and 'data' in file) or (not train and 'test' in file):
                 with open(os.path.join(base_folder, file), 'rb') as fo:
                     data = pickle.load(fo, encoding='bytes')
