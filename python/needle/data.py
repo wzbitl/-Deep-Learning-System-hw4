@@ -238,7 +238,10 @@ class Dictionary(object):
         Returns the word's unique ID.
         """
         # BEGIN YOUR SOLUTION
-        raise NotImplementedError()
+        if word not in self.word2idx:
+            self.word2idx[word] = len(self.idx2word)
+            self.idx2word.append(word)
+        return self.word2idx[word]
         # END YOUR SOLUTION
 
     def __len__(self):
@@ -246,7 +249,7 @@ class Dictionary(object):
         Returns the number of unique words in the dictionary.
         """
         # BEGIN YOUR SOLUTION
-        raise NotImplementedError()
+        return len(self.idx2word)
         # END YOUR SOLUTION
 
 
@@ -275,7 +278,16 @@ class Corpus(object):
         ids: List of ids
         """
         # BEGIN YOUR SOLUTION
-        raise NotImplementedError()
+        ids = []
+        with open(path, 'r') as f:
+            lines = f.readlines()[:max_lines]
+            for l in lines:
+                for word in l.split():
+                    self.dictionary.add_word(word)
+                    ids.append(self.dictionary.word2idx[word])
+                self.dictionary.add_word('<eos>')
+                ids.append(self.dictionary.word2idx['<eos>'])
+        return ids
         # END YOUR SOLUTION
 
 
@@ -296,7 +308,10 @@ def batchify(data, batch_size, device, dtype):
     Returns the data as a numpy array of shape (nbatch, batch_size).
     """
     # BEGIN YOUR SOLUTION
-    raise NotImplementedError()
+    data = np.array(data, dtype=dtype)
+    nbatch = len(data) // batch_size
+    data = data[:batch_size*nbatch].reshape((batch_size, nbatch)).transpose()
+    return data
     # END YOUR SOLUTION
 
 
@@ -320,5 +335,9 @@ def get_batch(batches, i, bptt, device=None, dtype=None):
     target - Tensor of shape (bptt*bs,) with cached data as NDArray
     """
     # BEGIN YOUR SOLUTION
-    raise NotImplementedError()
+    nbatch = len(batches)
+    seq_len = min(bptt, nbatch-1-i)
+    data = batches[i:i+seq_len]
+    target = batches[i+1:i+1+seq_len].flatten()
+    return Tensor(data, device=device, dtype=dtype), Tensor(target, device=device, dtype=dtype)
     # END YOUR SOLUTION
