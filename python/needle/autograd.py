@@ -326,7 +326,7 @@ class Tensor(Value):
             return needle.ops.EWiseAdd()(self, needle.ops.Negate()(other))
         else:
             return needle.ops.AddScalar(-other)(self)
-       
+
     def __rsub__(self, other):
         if isinstance(other, Tensor):
             return needle.ops.EWiseAdd()(needle.ops.Negate()(self), other)
@@ -413,11 +413,12 @@ def find_topo_sort(node_list: List[Value]) -> List[Value]:
 def topo_sort_dfs(node, visited, topo_order):
     """Post-order DFS"""
     # BEGIN YOUR SOLUTION
+    if node in visited:
+        return
+    visited.add(node)
     for input_node in node.inputs:
         topo_sort_dfs(input_node, visited, topo_order)
-    if node not in visited:
-        visited.add(node)
-        topo_order.append(node)
+    topo_order.append(node)
     # END YOUR SOLUTION
 
 
