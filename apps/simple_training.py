@@ -74,6 +74,7 @@ def train_cifar10(model, dataloader, n_epochs=1, optimizer=ndl.optim.Adam,
     opt = optimizer(model.parameters(), lr, weight_decay)
     for i in range(n_epochs):
         acc, loss = epoch_general_cifar10(dataloader, model, loss_fn(), opt)
+        print("train epoch{}: acc: {}, loss: {}".format(i, acc, loss))
     return acc, loss
     # END YOUR SOLUTION
 
@@ -94,6 +95,7 @@ def evaluate_cifar10(model, dataloader, loss_fn=nn.SoftmaxLoss):
     np.random.seed(4)
     # BEGIN YOUR SOLUTION
     acc, loss = epoch_general_cifar10(dataloader, model, loss_fn())
+    print("evaluate: acc: {}, loss: {}".format(acc, loss))
     return acc, loss
     # END YOUR SOLUTION
 

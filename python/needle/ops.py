@@ -448,7 +448,16 @@ class Stack(TensorOp):
 
     def compute(self, args):
         # BEGIN YOUR SOLUTION
-        return Tensor(numpy.stack([t.numpy() for t in args], axis=self.axis))
+        stack_dim = len(args)
+        out = array_api.empty(
+            (stack_dim, args[0].size), dtype=args[0].dtype, device=args[0].device)
+        for i in range(stack_dim):
+            out[i, :] = args[i].reshape((1, args[0].size))
+        new_shape = (stack_dim,) + args[0].shape
+        new_axes = [i for i in range(1, len(args[0].shape)+1)]
+        new_axes.insert(self.axis, 0)
+        out = out.reshape(new_shape).permute(new_axes)
+        return out
         # END YOUR SOLUTION
 
     def gradient(self, out_grad, node):
@@ -473,10 +482,17 @@ class Split(TensorTupleOp):
 
     def compute(self, A):
         # BEGIN YOUR SOLUTION
-        def unstack(a, axis=0):
-            return [numpy.squeeze(e, axis) for e in numpy.split(a, a.shape[axis], axis=axis)]
-        s = unstack(A.numpy(), self.axis)
-        return [Tensor(i) for i in s]
+        stack_dim = A.shape[self.axis]
+        new_axes = list(range(len(A.shape)))
+        new_axes[0], new_axes[self.axis] = new_axes[self.axis], new_axes[0]
+        new_shape = list(A.shape)
+        new_shape.pop(self.axis)
+        A = A.permute(tuple(new_axes)).reshape(
+            (stack_dim, A.size // stack_dim))
+        out = []
+        for i in range(stack_dim):
+            out.append(A[i, :].reshape(tuple(new_shape)))
+        return out
         # END YOUR SOLUTION
 
     def gradient(self, out_grad, node):
