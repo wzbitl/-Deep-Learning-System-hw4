@@ -246,7 +246,8 @@ class Dropout(Module):
         # BEGIN YOUR SOLUTION
         if self.training:
             # prob = Tensor(np.random.binomial(n=1, p=1-self.p, size=x.shape))
-            prob = init.randb(*x.shape, p=1-self.p, device=x.device, )
+            prob = init.randb(*x.shape, p=1-self.p,
+                              device=x.device, dtype=x.dtype)
             return x * prob / (1-self.p)
         else:
             return x
@@ -619,7 +620,12 @@ class Embedding(Module):
             initialized from N(0, 1).
         """
         # BEGIN YOUR SOLUTION
-        raise NotImplementedError()
+        self.num_embeddings = num_embeddings
+        self.embedding_dim = embedding_dim
+        self.device = device
+        self.dtype = dtype
+        self.weight = Parameter(init.randn(
+            num_embeddings, embedding_dim, device=device, dtype=dtype))
         # END YOUR SOLUTION
 
     def forward(self, x: Tensor) -> Tensor:
@@ -633,5 +639,9 @@ class Embedding(Module):
         output of shape (seq_len, bs, embedding_dim)
         """
         # BEGIN YOUR SOLUTION
-        raise NotImplementedError()
+        seq_len, bs = x.shape
+        one_hot = init.one_hot(self.num_embeddings, x.reshape(
+            (seq_len * bs,)), device=self.device, dtype=self.dtype)
+        output = one_hot @ self.weight
+        return output.reshape((seq_len, bs, self.embedding_dim))
         # END YOUR SOLUTION

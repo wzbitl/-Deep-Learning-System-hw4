@@ -38,14 +38,14 @@ def epoch_general_cifar10(dataloader, model, loss_fn=nn.SoftmaxLoss(), opt=None)
     for x, y in dataloader:
         logits = model(x)
         loss = loss_fn(logits, y)
-        total_loss += loss
-        y_hat = np.argmax(logits.numpy(), axis=1)
+        total_loss += loss.detach().numpy()
+        y_hat = np.argmax(logits.detach().numpy(), axis=1)
         right_num += np.sum(y_hat == y.numpy())
         if opt:
             opt.reset_grad()
             loss.backward()
             opt.step()
-    average_loss = total_loss.numpy() / total_example
+    average_loss = total_loss / total_example
     accuray = right_num / total_example
     return accuray, average_loss
     # END YOUR SOLUTION
@@ -123,7 +123,37 @@ def epoch_general_ptb(data, model, seq_len=40, loss_fn=nn.SoftmaxLoss(), opt=Non
     """
     np.random.seed(4)
     # BEGIN YOUR SOLUTION
-    raise NotImplementedError()
+    if opt is None:
+        model.eval()
+    total_loss = 0
+    right_num = 0
+    nbatch, batch_size = data.shape
+    last_time_h = None
+    total_example = 0
+
+    for i in range(0, nbatch-1, seq_len):
+        x, target = ndl.data.get_batch(
+            data, i, seq_len, device=device, dtype=dtype)
+        real_len = target.shape[0]
+        total_example += real_len
+        out, last_time_h = model(x, last_time_h)
+        if isinstance(last_time_h, tuple):
+            last_time_h = (ndl.Tensor(last_time_h[0].detach().numpy(), device=device, dtype=dtype), ndl.Tensor(
+                last_time_h[1].detach().numpy(), device=device, dtype=dtype))
+        else:
+            last_time_h = ndl.Tensor(
+                last_time_h.detach().numpy(), device=device, dtype=dtype)
+        loss = loss_fn(out, target)
+        total_loss += loss.detach().numpy() * real_len
+        y_hat = np.argmax(out.detach().numpy(), axis=1)
+        right_num += np.sum(y_hat == target.numpy())
+        if opt:
+            opt.reset_grad()
+            loss.backward()
+            opt.step()
+    average_loss = total_loss / total_example
+    accuray = right_num / total_example
+    return accuray, average_loss
     # END YOUR SOLUTION
 
 
@@ -150,7 +180,12 @@ def train_ptb(model, data, seq_len=40, n_epochs=1, optimizer=ndl.optim.SGD,
     """
     np.random.seed(4)
     # BEGIN YOUR SOLUTION
-    raise NotImplementedError()
+    opt = optimizer(model.parameters(), lr, weight_decay)
+    for i in range(n_epochs):
+        acc, loss = epoch_general_ptb(
+            data, model, seq_len, loss_fn(), opt, clip, device, dtype)
+        print("train epoch{}: acc: {}, loss: {}".format(i, acc, loss))
+    return acc, loss
     # END YOUR SOLUTION
 
 
@@ -171,7 +206,10 @@ def evaluate_ptb(model, data, seq_len=40, loss_fn=nn.SoftmaxLoss,
     """
     np.random.seed(4)
     # BEGIN YOUR SOLUTION
-    raise NotImplementedError()
+    acc, loss = epoch_general_ptb(
+        data, model, seq_len, loss_fn(), device=device, dtype=dtype)
+    print("evaluate: acc: {}, loss: {}".format(acc, loss))
+    return acc, loss
     # END YOUR SOLUTION
 
 

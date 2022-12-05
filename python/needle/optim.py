@@ -27,7 +27,7 @@ class SGD(Optimizer):
         # BEGIN YOUR SOLUTION
         for p in self.params:
             regula = p.grad + p * self.weight_decay
-            self.u[p] = (self.momentum * self.u[p] +
+            self.u[p] = (self.momentum * self.u.get(p, 0) +
                          (1 - self.momentum) * regula).data
             p.cached_data -= self.lr * self.u[p].cached_data
         # END YOUR SOLUTION
